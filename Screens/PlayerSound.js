@@ -1,13 +1,26 @@
-import React, { useState } from "react";
-import { SafeAreaView, StyleSheet, Text, View, Image } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+} from "react-native";
 import Slider from "@react-native-community/slider";
 import { LinearGradient } from "expo-linear-gradient";
 import { AntDesign } from "@expo/vector-icons";
 import { Foundation } from "@expo/vector-icons";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
-
+import { millisToMinutesAndSeconds } from "../Controls/getTimeFromMilisecond";
 import { BoxShadow } from "react-native-shadow";
+import {
+  startSoundFunction,
+  posePlayingSoundFunction,
+  updateSoundPower,
+  initialisationSound,
+} from "../Controls/manageSound";
 const assets = {
   imageNiska: require("../assets/niska_du_lundi_au_lundi.jpg"),
 };
@@ -15,10 +28,16 @@ const assets = {
 const PlayerSound = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [durationAudio, setDurationAudio] = useState(0.0);
-  const [soundPower, setSoundPower] = useState(0);
+  const [maxDurationAudio, setMaxDurationAudio] = useState(0.0);
+  const [soundPower, setSoundPower] = useState(1.0);
+  const [hasPermission, setHasPermission] = useState(false);
 
-  const maxDuration = 5.0;
-  const maxSoundPower = 100;
+  useEffect(() => {
+    initialisation();
+  }, []);
+
+  // const maxDuration = 5.0;
+  const maxSoundPower = 1;
   const shadowOpt = {
     width: 160,
     height: 170,
@@ -28,7 +47,56 @@ const PlayerSound = () => {
     opacity: 0.1,
     x: 0,
     y: 3,
-    style:  styles.shadowBox ,
+    style: styles.shadowBox,
+  };
+  /**
+   *  intialise all functions
+   */
+  const initialisation = async () => {
+    console.log("test 1");
+    initialisationSound(async (callback) => {
+      // console.log("callBack => ", callback);
+      if (callback != false) {
+        setHasPermission(true);
+        const handleTime = await millisToMinutesAndSeconds(callback);
+        // console.log("init calback => ", handleTime);
+        setMaxDurationAudio(handleTime);
+      } else {
+        setHasPermission(false);
+      }
+    });
+  };
+
+  const startPlayingSound = () => {
+    if (hasPermission) {
+      startSoundFunction(
+        (callback) => handleTimeFromSound(callback),
+        durationAudio
+      );
+    } else {
+      initialisationSound();
+    }
+  };
+
+  const getDurationOfSound = (time) => {
+    let times = millisToMinutesAndSeconds(time.positionMillis);
+    setMaxDurationAudio(times);
+  };
+  const handleTimeFromSound = (callback) => {
+    let time = millisToMinutesAndSeconds(callback.positionMillis);
+    console.log("time => ", time);
+    setDurationAudio(time);
+    // console.log("calback from sound = > ", callback);
+    setIsPlaying(true);
+  };
+
+  const stopPlayingSound = () => {
+    posePlayingSoundFunction();
+    setIsPlaying(false);
+  };
+  const handleSoundPower = (value) => {
+    setSoundPower(value);
+    updateSoundPower(value.toFixed(1));
   };
   return (
     <LinearGradient colors={["#fff", "#222"]} style={styles.gardient}>
@@ -40,7 +108,7 @@ const PlayerSound = () => {
             resizeMode="cover"
           />
         </View>
-{/* 
+        {/* 
         <BoxShadow setting={shadowOpt}>
           <Image
             source={assets.imageNiska}
@@ -52,25 +120,33 @@ const PlayerSound = () => {
         <View style={styles.timer}>
           <Slider
             style={styles.slider}
-            maximumValue={maxDuration}
+            maximumValue={maxDurationAudio}
             minimumTrackTintColor="#FFFFFF"
             maximumTrackTintColor="#000000"
             onValueChange={(value) => setDurationAudio(value)}
           />
           <View style={styles.containerTime}>
-            <Text style={styles.time}>{durationAudio.toFixed(2)}</Text>
-            <Text style={styles.time}>- {maxDuration.toFixed(2)}</Text>
+            <Text style={styles.time}>{durationAudio}</Text>
+            <Text style={styles.time}>- {maxDurationAudio}</Text>
           </View>
         </View>
         <View style={styles.containerControle}>
-          <AntDesign name="banckward" size={30} color="#fff" />
+          <TouchableOpacity>
+            <AntDesign name="banckward" size={30} color="#fff" />
+          </TouchableOpacity>
+
           {isPlaying ? (
-            <Entypo name="controller-stop" size={58} color="#fff" />
+            <TouchableOpacity onPress={() => stopPlayingSound()}>
+              <Entypo name="controller-stop" size={58} color="#fff" />
+            </TouchableOpacity>
           ) : (
-            <AntDesign name="caretright" size={60} color="#fff" />
+            <TouchableOpacity onPress={() => startPlayingSound()}>
+              <AntDesign name="caretright" size={60} color="#fff" />
+            </TouchableOpacity>
           )}
 
           <AntDesign name="forward" size={30} color="#fff" />
+          <TouchableOpacity></TouchableOpacity>
         </View>
         <View style={styles.containerSoundControle}>
           <Foundation name="volume-none" size={24} color="#fff" />
@@ -79,7 +155,8 @@ const PlayerSound = () => {
             maximumValue={maxSoundPower}
             minimumTrackTintColor="#FFFFFF"
             maximumTrackTintColor="#000000"
-            onValueChange={(value) => setSoundPower(value)}
+            value={soundPower}
+            onValueChange={(value) => handleSoundPower(value)}
           />
           <FontAwesome5 name="volume-up" size={24} color="#fff" />
         </View>
@@ -164,9 +241,9 @@ const styles = StyleSheet.create({
     width: "75%",
     height: 40,
   },
-  shadowBox:{
-      alignItems:"center",
-      justifyContent:"center",
-      alignSelf:"center"
-  }
+  shadowBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+  },
 });
