@@ -19,7 +19,7 @@ import {
   startSoundFunction,
   posePlayingSoundFunction,
   updateSoundPower,
-  initialisationSound,
+  initializationSound,
 } from "../Controls/manageSound";
 const assets = {
   imageNiska: require("../assets/niska_du_lundi_au_lundi.jpg"),
@@ -33,7 +33,7 @@ const PlayerSound = () => {
   const [hasPermission, setHasPermission] = useState(false);
 
   useEffect(() => {
-    initialisation();
+    initialization();
   }, []);
 
   // const maxDuration = 5.0;
@@ -50,11 +50,11 @@ const PlayerSound = () => {
     style: styles.shadowBox,
   };
   /**
-   *  intialise all functions
+   *  initialize all functions
    */
-  const initialisation = async () => {
+  const initialization = async () => {
     console.log("test 1");
-    initialisationSound(async (callback) => {
+    initializationSound(async (callback) => {
       // console.log("callBack => ", callback);
       if (callback != false) {
         setHasPermission(true);
@@ -69,25 +69,31 @@ const PlayerSound = () => {
 
   const startPlayingSound = () => {
     if (hasPermission) {
+      console.log("test start 2");
       startSoundFunction(
         (callback) => handleTimeFromSound(callback),
         durationAudio
       );
+      if (!isPlaying) {
+        setIsPlaying(true);
+      }
     } else {
-      initialisationSound();
+      console.log("test start 2");
+      initializationSound();
     }
   };
 
-  const getDurationOfSound = (time) => {
-    let times = millisToMinutesAndSeconds(time.positionMillis);
-    setMaxDurationAudio(times);
-  };
   const handleTimeFromSound = (callback) => {
-    let time = millisToMinutesAndSeconds(callback.positionMillis);
-    console.log("time => ", time);
-    setDurationAudio(time);
+    // console.log("time => ", time);
+    if (
+      callback.positionMillis !== undefined &&
+      callback.positionMillis !== null
+    ) {
+      let time = millisToMinutesAndSeconds(callback.positionMillis);
+      setDurationAudio(time);
+    }
+
     // console.log("calback from sound = > ", callback);
-    setIsPlaying(true);
   };
 
   const stopPlayingSound = () => {
@@ -96,7 +102,7 @@ const PlayerSound = () => {
   };
   const handleSoundPower = (value) => {
     setSoundPower(value);
-    updateSoundPower(value.toFixed(1));
+    updateSoundPower(value.toFixed(2));
   };
   return (
     <LinearGradient colors={["#fff", "#222"]} style={styles.gardient}>
@@ -123,6 +129,7 @@ const PlayerSound = () => {
             maximumValue={maxDurationAudio}
             minimumTrackTintColor="#FFFFFF"
             maximumTrackTintColor="#000000"
+            value={durationAudio}
             onValueChange={(value) => setDurationAudio(value)}
           />
           <View style={styles.containerTime}>

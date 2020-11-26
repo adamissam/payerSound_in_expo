@@ -9,13 +9,13 @@ Audio.setAudioModeAsync({
   shouldDuckAndroid: true,
   interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
 });
-// let position = 0; // => position of the playinf of the sound
+let position = 0; // => position of the playing of the sound
 
 /**
- * Function to intialise sound
+ * Function to initialize sound
  * @param {*} callback
  */
-export const initialisationSound = async (callback) => {
+export const initializationSound = async (callback) => {
   try {
     const { status } = await Audio.requestPermissionsAsync();
     if (status === "granted") {
@@ -47,65 +47,56 @@ export const initialisationSound = async (callback) => {
   }
 };
 
-export const startSoundFunction = async (callback, position) => {
+export const startSoundFunction = async (callback) => {
   try {
-    const { status } = await Audio.getPermissionsAsync();
-    if (status === "granted") {
-      //   const { sound: soundObject, status } = await Audio.Sound.createAsync(
-      //     source,
-      //     {
-      //       shouldPlay: false,
-      //     }
-      //   );
+    const { status } = await Audio.getPermissionsAsync(); // => check if user has permission for audio
 
-      const status = await soundObject.getStatusAsync();
+    if (status === "granted") {
+      const status = await soundObject.getStatusAsync(); // => check if there is an instance of  audio
+
       console.log("status => ", status);
-      //   if(status.)
-      //   startPlaySoundWoithoutInstance();
-      //   const status = await soundObject.getStatusAsync();
+
       if (status.isLoaded && position == 0) {
+        // if there is an instance of audio and user don't have start play audio
         console.log("start 1");
-        await soundObject.setOnPlaybackStatusUpdate(callback);
+        soundObject.setOnPlaybackStatusUpdate(callback);
         soundObject.playAsync();
-      } else {
+      } else if (status.isLoaded && position > 0) {
+        // if user has already started play an audio
         console.log("start 2");
         console.log("status 2=> ", status);
-        await soundObject.setOnPlaybackStatusUpdate(callback);
+        console.log("position => ", position);
+        soundObject.setOnPlaybackStatusUpdate(callback);
         await soundObject.playFromPositionAsync(position);
-
-        await soundObject.stopAsync();
-        await soundObject.unloadAsync();
       }
     } else {
+      // if user has not permission
       callback(false);
     }
   } catch (error) {
     console.log("error play sound=> ", error);
+    position = 0;
+    await soundObject.stopAsync();
+    await soundObject.unloadAsync();
   }
 };
 
-async function startPlaySoundWoithoutInstance() {
-  //   soundObject.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
-  //   Audio.Sound.createAsync(source,downloadFirst = true)
-  //   await soundObject.loadAsync(source, (onPlaybackStatusUpdate = null));
-  await soundObject.loadAsync(source);
-  soundObject.setProgressUpdateIntervalAsync(50);
-  soundObject.playAsync();
-}
-
 export const posePlayingSoundFunction = async () => {
   await soundObject.pauseAsync();
-  //   await soundObject.unloadAsync(); // remove instance of sound
   const status = await soundObject.getStatusAsync();
   position = status.positionMillis;
-  console.log("asked sound pose => ", status);
-  console.log("type of sound pose => ", typeof status.volume);
+  // console.log("asked sound pose => ", status);
+  // console.log("type of sound pose => ", typeof status.volume);
 };
 
 export const updateSoundPower = async (value) => {
+  console.log("//////");
   console.log("value audio => ", value);
   console.log("type of  audio => ", typeof value);
-  soundObject.setVolumeAsync(parseInt(value));
+  let volume = parseFloat(value);
+  console.log("volume => ", volume);
+  console.log("//////");
+  await soundObject.setVolumeAsync(volume);
 
   const status = await soundObject.getStatusAsync();
   console.log("status => ", status);
